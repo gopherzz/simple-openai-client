@@ -69,7 +69,7 @@ func (c OpenAiClient) MakeOpenAiReq(prompt string) (string, error) {
 	}
 
 	if c.Debug {
-		c.Logger.Println(choices)
+		c.Logger.Printf("%s\n", body)
 	}
 
 	return choices.Choices[0].Text, nil
