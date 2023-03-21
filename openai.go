@@ -3,33 +3,19 @@ package openai
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
-)
 
-type openaiResponse struct {
-	ID      string `json:"id"`
-	Object  string `json:"object"`
-	Created int    `json:"created"`
-	Model   string `json:"model"`
-	Choices []struct {
-		Text         string `json:"text"`
-		Index        int    `json:"index"`
-		Logprobs     any    `json:"logprobs"`
-		FinishReason string `json:"finish_reason"`
-	} `json:"choices"`
-	Usage struct {
-		PromptTokens     int `json:"prompt_tokens"`
-		CompletionTokens int `json:"completion_tokens"`
-		TotalTokens      int `json:"total_tokens"`
-	} `json:"usage"`
-}
+	"github.com/gopherzz/simple-openai-client/internal/models"
+)
 
 type OpenAiClient struct {
 	ApiToken  string
 	Model     string
 	MaxTokens int
+	Debug     bool
+	Logger    *log.Logger
 }
 
 // Make request to OpenAi GPT Api
@@ -54,6 +40,10 @@ func (c OpenAiClient) MakeOpenAiReq(prompt string) (string, error) {
 		return "", err
 	}
 
+	if c.Debug {
+		c.Logger.Println(req)
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+c.ApiToken)
 
@@ -63,19 +53,23 @@ func (c OpenAiClient) MakeOpenAiReq(prompt string) (string, error) {
 		log.Println("Error sending request:", err)
 		return "", err
 	}
-
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("Error reading response body:", err)
 		return "", err
 	}
 
-	choices := openaiResponse{}
+	choices := models.OpenaiResponse{}
 	err = json.Unmarshal(body, &choices)
 	if err != nil {
 		log.Println(err)
 		return "", err
+	}
+
+	if c.Debug {
+		c.Logger.Println(choices)
 	}
 
 	return choices.Choices[0].Text, nil
